@@ -90,7 +90,7 @@ function OverviewPage() {
                 {recentSales.map((sale) => (
                   <li key={sale.id} className="flex items-center justify-between gap-4 px-4 py-2.5">
                     <span className="tabular text-sm">{formatDate(sale.sale_date)}</span>
-                    <span className="truncate text-xs text-muted-foreground">
+                    <span className="flex-1 truncate pl-4 text-left text-xs text-muted-foreground">
                       {sale.items.map((item) => item.recipe_name).join(", ")}
                     </span>
                     <span className="tabular text-sm font-medium">
