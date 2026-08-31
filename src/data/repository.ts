@@ -4,54 +4,54 @@
  * A interface `CusteiaRepository` é o único contrato que as páginas conhecem.
  * Hoje existe apenas a implementação em memória (`mockRepository`).
  *
- * TODO(Supabase): criar `supabase-repository.ts` implementando esta mesma
- * interface com queries reais (tabelas: businesses, ingredients, recipes,
- * recipe_ingredients, sales, sale_items, expenses) e trocar a linha de
- * exportação no final deste arquivo. Nenhuma página precisa ser alterada.
+ * TODO: no futuro, criar uma implementação que conversa com a API do backend
+ * (tabelas: users, supplies, recipes, recipe_supplies, sales, sale_items,
+ * expenses) e trocar apenas a linha de exportação no final deste arquivo.
  */
-import { buildRecipeWithCosts, isWithinPeriod, ingredientUnitCost } from "@/lib/calculations";
+import { buildRecipeWithCosts, isWithinPeriod, supplyUnitCost } from "@/lib/calculations";
 import {
-  MOCK_BUSINESS,
   MOCK_EXPENSES,
-  MOCK_INGREDIENTS,
   MOCK_RECIPES,
-  MOCK_RECIPE_INGREDIENTS,
+  MOCK_RECIPE_SUPPLIES,
   MOCK_SALES,
   MOCK_SALE_ITEMS,
+  MOCK_SUPPLIES,
+  MOCK_USER,
 } from "@/data/mock-data";
 import type {
-  Business,
   Expense,
   ExpenseInput,
-  Ingredient,
-  IngredientInput,
   Period,
   PeriodResult,
   Recipe,
-  RecipeIngredient,
+  RecipeSupply,
   RecipeInput,
-  RecipeWithCosts,
   Sale,
   SaleInput,
   SaleItem,
   SaleWithItems,
+  Supply,
+  SupplyInput,
+  User,
 } from "@/types/domain";
 
 export interface CusteiaRepository {
-  getBusiness(): Promise<Business>;
+  getCurrentUser(): Promise<User>;
 
-  listIngredients(): Promise<Ingredient[]>;
-  createIngredient(input: IngredientInput): Promise<Ingredient>;
-  updateIngredient(id: string, input: IngredientInput): Promise<Ingredient>;
-  deleteIngredient(id: string): Promise<void>;
+  listSupplies(): Promise<Supply[]>;
+  getSupply(id: string): Promise<Supply>;
+  createSupply(input: SupplyInput): Promise<Supply>;
+  updateSupply(id: string, input: SupplyInput): Promise<Supply>;
+  deleteSupply(id: string): Promise<void>;
 
-  listRecipes(): Promise<RecipeWithCosts[]>;
-  getRecipe(id: string): Promise<RecipeWithCosts>;
+  listRecipes(): Promise<RecipeWithCostsList>;
+  getRecipe(id: string): Promise<RecipeWithCostsItem>;
   createRecipe(input: RecipeInput): Promise<Recipe>;
   updateRecipe(id: string, input: RecipeInput): Promise<Recipe>;
   deleteRecipe(id: string): Promise<void>;
 
   listSales(): Promise<SaleWithItems[]>;
+  getSale(id: string): Promise<SaleWithItems>;
   createSale(input: SaleInput): Promise<Sale>;
   deleteSale(id: string): Promise<void>;
 
@@ -63,6 +63,10 @@ export interface CusteiaRepository {
   getPeriodResult(period: Period): Promise<PeriodResult>;
 }
 
+import type { RecipeWithCosts } from "@/types/domain";
+type RecipeWithCostsItem = RecipeWithCosts;
+type RecipeWithCostsList = RecipeWithCosts[];
+
 /* -------------------------------------------------------------------------- */
 /* Implementação mock em memória                                              */
 /* -------------------------------------------------------------------------- */
@@ -70,10 +74,10 @@ export interface CusteiaRepository {
 const LATENCY_MS = 220;
 
 const db = {
-  business: { ...MOCK_BUSINESS },
-  ingredients: [...MOCK_INGREDIENTS],
+  user: { ...MOCK_USER },
+  supplies: [...MOCK_SUPPLIES],
   recipes: [...MOCK_RECIPES],
-  recipeIngredients: [...MOCK_RECIPE_INGREDIENTS],
+  recipeSupplies: [...MOCK_RECIPE_SUPPLIES],
   sales: [...MOCK_SALES],
   saleItems: [...MOCK_SALE_ITEMS],
   expenses: [...MOCK_EXPENSES],
@@ -93,8 +97,8 @@ function stamps() {
 }
 
 function recipeWithCosts(recipe: Recipe): RecipeWithCosts {
-  const links = db.recipeIngredients.filter((l) => l.recipe_id === recipe.id);
-  return buildRecipeWithCosts(recipe, links, db.ingredients);
+  const links = db.recipeSupplies.filter((l) => l.recipe_id === recipe.id);
+  return buildRecipeWithCosts(recipe, links, db.supplies);
 }
 
 function unitCostOf(recipeId: string): number {
@@ -119,38 +123,44 @@ function saleWithItems(sale: Sale): SaleWithItems {
 }
 
 export const mockRepository: CusteiaRepository = {
-  getBusiness: () => delay({ ...db.business }),
+  getCurrentUser: () => delay({ ...db.user }),
 
-  listIngredients: () =>
-    delay([...db.ingredients].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))),
+  listSupplies: () =>
+    delay([...db.supplies].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))),
 
-  createIngredient: (input) => {
-    const ingredient: Ingredient = {
-      id: id("ing"),
-      business_id: db.business.id,
+  getSupply: (supplyId) => {
+    const supply = db.supplies.find((s) => s.id === supplyId);
+    if (!supply) return Promise.reject(new Error("Insumo não encontrado."));
+    return delay({ ...supply });
+  },
+
+  createSupply: (input) => {
+    const supply: Supply = {
+      id: id("sup"),
+      user_id: db.user.id,
       ...input,
       ...stamps(),
     };
-    db.ingredients = [...db.ingredients, ingredient];
-    return delay(ingredient);
+    db.supplies = [...db.supplies, supply];
+    return delay(supply);
   },
 
-  updateIngredient: (idToUpdate, input) => {
-    const current = db.ingredients.find((i) => i.id === idToUpdate);
+  updateSupply: (idToUpdate, input) => {
+    const current = db.supplies.find((s) => s.id === idToUpdate);
     if (!current) return Promise.reject(new Error("Insumo não encontrado."));
-    const updated: Ingredient = { ...current, ...input, updated_at: new Date().toISOString() };
-    db.ingredients = db.ingredients.map((i) => (i.id === idToUpdate ? updated : i));
+    const updated: Supply = { ...current, ...input, updated_at: new Date().toISOString() };
+    db.supplies = db.supplies.map((s) => (s.id === idToUpdate ? updated : s));
     return delay(updated);
   },
 
-  deleteIngredient: (idToDelete) => {
-    const usedIn = db.recipeIngredients.filter((l) => l.ingredient_id === idToDelete);
+  deleteSupply: (idToDelete) => {
+    const usedIn = db.recipeSupplies.filter((l) => l.supply_id === idToDelete);
     if (usedIn.length > 0) {
       return Promise.reject(
         new Error("Este insumo é usado em uma receita. Remova-o da receita antes de excluir."),
       );
     }
-    db.ingredients = db.ingredients.filter((i) => i.id !== idToDelete);
+    db.supplies = db.supplies.filter((s) => s.id !== idToDelete);
     return delay(undefined);
   },
 
@@ -170,7 +180,7 @@ export const mockRepository: CusteiaRepository = {
   createRecipe: (input) => {
     const recipe: Recipe = {
       id: id("rec"),
-      business_id: db.business.id,
+      user_id: db.user.id,
       name: input.name,
       description: input.description,
       yield_quantity: input.yield_quantity,
@@ -179,13 +189,14 @@ export const mockRepository: CusteiaRepository = {
       ...stamps(),
     };
     db.recipes = [...db.recipes, recipe];
-    db.recipeIngredients = [
-      ...db.recipeIngredients,
-      ...input.items.map<RecipeIngredient>((item) => ({
-        id: id("ri"),
+    db.recipeSupplies = [
+      ...db.recipeSupplies,
+      ...input.items.map<RecipeSupply>((item) => ({
+        id: id("rs"),
         recipe_id: recipe.id,
-        ingredient_id: item.ingredient_id,
+        supply_id: item.supply_id,
         quantity: item.quantity,
+        unit: item.unit,
       })),
     ];
     return delay(recipe);
@@ -204,13 +215,14 @@ export const mockRepository: CusteiaRepository = {
       updated_at: new Date().toISOString(),
     };
     db.recipes = db.recipes.map((r) => (r.id === recipeId ? updated : r));
-    db.recipeIngredients = [
-      ...db.recipeIngredients.filter((l) => l.recipe_id !== recipeId),
-      ...input.items.map<RecipeIngredient>((item) => ({
-        id: id("ri"),
+    db.recipeSupplies = [
+      ...db.recipeSupplies.filter((l) => l.recipe_id !== recipeId),
+      ...input.items.map<RecipeSupply>((item) => ({
+        id: id("rs"),
         recipe_id: recipeId,
-        ingredient_id: item.ingredient_id,
+        supply_id: item.supply_id,
         quantity: item.quantity,
+        unit: item.unit,
       })),
     ];
     return delay(updated);
@@ -224,7 +236,7 @@ export const mockRepository: CusteiaRepository = {
       );
     }
     db.recipes = db.recipes.filter((r) => r.id !== recipeId);
-    db.recipeIngredients = db.recipeIngredients.filter((l) => l.recipe_id !== recipeId);
+    db.recipeSupplies = db.recipeSupplies.filter((l) => l.recipe_id !== recipeId);
     return delay(undefined);
   },
 
@@ -235,6 +247,12 @@ export const mockRepository: CusteiaRepository = {
         .map(saleWithItems),
     ),
 
+  getSale: (saleId) => {
+    const sale = db.sales.find((s) => s.id === saleId);
+    if (!sale) return Promise.reject(new Error("Venda não encontrada."));
+    return delay(saleWithItems(sale));
+  },
+
   createSale: (input) => {
     const saleId = id("sale");
     const items = input.items.map<SaleItem>((item) => ({
@@ -243,13 +261,13 @@ export const mockRepository: CusteiaRepository = {
       recipe_id: item.recipe_id,
       quantity: item.quantity,
       unit_price: item.unit_price,
-      total_amount: item.quantity * item.unit_price,
+      total_price: item.quantity * item.unit_price,
     }));
     const sale: Sale = {
       id: saleId,
-      business_id: db.business.id,
+      user_id: db.user.id,
       sale_date: input.sale_date,
-      total_amount: items.reduce((sum, item) => sum + item.total_amount, 0),
+      total_price: items.reduce((sum, item) => sum + item.total_price, 0),
       created_at: new Date().toISOString(),
     };
     db.sales = [...db.sales, sale];
@@ -264,12 +282,12 @@ export const mockRepository: CusteiaRepository = {
   },
 
   listExpenses: () =>
-    delay([...db.expenses].sort((a, b) => b.date.localeCompare(a.date))),
+    delay([...db.expenses].sort((a, b) => b.expense_date.localeCompare(a.expense_date))),
 
   createExpense: (input) => {
     const expense: Expense = {
       id: id("exp"),
-      business_id: db.business.id,
+      user_id: db.user.id,
       ...input,
       ...stamps(),
     };
@@ -294,9 +312,11 @@ export const mockRepository: CusteiaRepository = {
     const sales = db.sales
       .filter((sale) => isWithinPeriod(sale.sale_date, from, to))
       .map(saleWithItems);
-    const expenses = db.expenses.filter((expense) => isWithinPeriod(expense.date, from, to));
+    const expenses = db.expenses.filter((expense) =>
+      isWithinPeriod(expense.expense_date, from, to),
+    );
 
-    const revenue = sales.reduce((sum, sale) => sum + sale.total_amount, 0);
+    const revenue = sales.reduce((sum, sale) => sum + sale.total_price, 0);
     const productCost = sales.reduce((sum, sale) => sum + sale.total_cost, 0);
     const expenseTotal = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     const result = revenue - productCost - expenseTotal;
@@ -305,8 +325,8 @@ export const mockRepository: CusteiaRepository = {
     for (const sale of sales) {
       const key = sale.sale_date.slice(0, 10);
       const entry = byDate.get(key) ?? { revenue: 0, result: 0 };
-      entry.revenue += sale.total_amount;
-      entry.result += sale.total_amount - sale.total_cost;
+      entry.revenue += sale.total_price;
+      entry.result += sale.total_price - sale.total_cost;
       byDate.set(key, entry);
     }
 
@@ -324,7 +344,7 @@ export const mockRepository: CusteiaRepository = {
   },
 };
 
-export { ingredientUnitCost };
+export { supplyUnitCost };
 
-/** Ponto único de troca mock → Supabase. */
+/** Ponto único de troca mock → backend. */
 export const repository: CusteiaRepository = mockRepository;

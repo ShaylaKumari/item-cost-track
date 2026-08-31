@@ -1,33 +1,34 @@
 /**
  * Domain model for Custeia.
  *
- * These types mirror 1:1 the future Supabase tables (snake_case columns kept
- * on purpose) so the mock repository can later be swapped for real queries
- * without touching the UI.
+ * 7 entidades oficiais: users, supplies, recipes, recipe_supplies, sales,
+ * sale_items, expenses. Os nomes de campos usam snake_case de propósito para
+ * espelhar 1:1 as futuras tabelas do backend.
  */
 
 export type ISODateString = string; // "2026-08-29" or full ISO timestamp
 
-export interface Business {
+export interface User {
   id: string;
   name: string;
+  email: string;
   created_at: ISODateString;
-  updated_at: ISODateString;
 }
 
-/** Unidades de medida suportadas para insumos e rendimentos. */
+/** Unidades de medida suportadas para insumos, receitas e rendimentos. */
 export const MEASUREMENT_UNITS = ["kg", "g", "L", "ml", "unidade", "pacote"] as const;
 export type MeasurementUnit = (typeof MEASUREMENT_UNITS)[number];
 
-export interface Ingredient {
+/** Insumo comprado pelo negócio. */
+export interface Supply {
   id: string;
-  business_id: string;
+  user_id: string;
   name: string;
-  unit: MeasurementUnit;
-  /** Quantidade disponível, na unidade do insumo. */
-  quantity: number;
-  /** Custo da quantidade disponível (custo total da compra). */
-  cost: number;
+  /** Quantidade comprada, na unidade de compra. */
+  purchase_quantity: number;
+  purchase_unit: MeasurementUnit;
+  /** Valor pago pela quantidade comprada. */
+  purchase_price: number;
   notes: string | null;
   created_at: ISODateString;
   updated_at: ISODateString;
@@ -35,7 +36,7 @@ export interface Ingredient {
 
 export interface Recipe {
   id: string;
-  business_id: string;
+  user_id: string;
   name: string;
   description: string | null;
   yield_quantity: number;
@@ -45,12 +46,15 @@ export interface Recipe {
   updated_at: ISODateString;
 }
 
-export interface RecipeIngredient {
+/** Quantidade de um insumo utilizada em uma receita. */
+export interface RecipeSupply {
   id: string;
   recipe_id: string;
-  ingredient_id: string;
-  /** Quantidade usada na receita, na unidade do insumo. */
+  supply_id: string;
+  /** Quantidade usada na receita, na unidade abaixo. */
   quantity: number;
+  /** Pode diferir da unidade de compra do insumo (conversão virá depois). */
+  unit: MeasurementUnit;
 }
 
 export const EXPENSE_CATEGORIES = [
@@ -68,11 +72,11 @@ export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
 
 export interface Expense {
   id: string;
-  business_id: string;
+  user_id: string;
   description: string;
   category: ExpenseCategory;
   amount: number;
-  date: ISODateString;
+  expense_date: ISODateString;
   notes: string | null;
   created_at: ISODateString;
   updated_at: ISODateString;
@@ -80,9 +84,9 @@ export interface Expense {
 
 export interface Sale {
   id: string;
-  business_id: string;
+  user_id: string;
   sale_date: ISODateString;
-  total_amount: number;
+  total_price: number;
   created_at: ISODateString;
 }
 
@@ -91,20 +95,21 @@ export interface SaleItem {
   sale_id: string;
   recipe_id: string;
   quantity: number;
+  /** Preço praticado no momento da venda (preservação histórica). */
   unit_price: number;
-  total_amount: number;
+  total_price: number;
 }
 
 /* ---------- Tipos compostos usados pela interface ---------- */
 
-export interface RecipeIngredientLine extends RecipeIngredient {
-  ingredient: Ingredient;
+export interface RecipeSupplyLine extends RecipeSupply {
+  supply: Supply;
   /** Custo da quantidade usada na receita. */
   line_cost: number;
 }
 
 export interface RecipeWithCosts extends Recipe {
-  items: RecipeIngredientLine[];
+  items: RecipeSupplyLine[];
   total_cost: number;
   unit_cost: number;
   unit_profit: number | null;
@@ -140,9 +145,9 @@ export interface PeriodResult {
 
 /* ---------- Payloads de escrita ---------- */
 
-export type IngredientInput = Pick<
-  Ingredient,
-  "name" | "unit" | "quantity" | "cost" | "notes"
+export type SupplyInput = Pick<
+  Supply,
+  "name" | "purchase_quantity" | "purchase_unit" | "purchase_price" | "notes"
 >;
 
 export interface RecipeInput {
@@ -151,12 +156,12 @@ export interface RecipeInput {
   yield_quantity: number;
   yield_unit: MeasurementUnit;
   selling_price: number | null;
-  items: Array<{ ingredient_id: string; quantity: number }>;
+  items: Array<{ supply_id: string; quantity: number; unit: MeasurementUnit }>;
 }
 
 export type ExpenseInput = Pick<
   Expense,
-  "description" | "category" | "amount" | "date" | "notes"
+  "description" | "category" | "amount" | "expense_date" | "notes"
 >;
 
 export interface SaleInput {

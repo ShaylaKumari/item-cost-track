@@ -1,33 +1,49 @@
 import type {
-  Ingredient,
+  MeasurementUnit,
   Recipe,
-  RecipeIngredient,
-  RecipeIngredientLine,
+  RecipeSupply,
+  RecipeSupplyLine,
   RecipeWithCosts,
+  Supply,
 } from "@/types/domain";
 
-/** Custo por unidade de medida do insumo (ex.: R$/kg). */
-export function ingredientUnitCost(ingredient: Ingredient): number {
-  if (!ingredient.quantity) return 0;
-  return ingredient.cost / ingredient.quantity;
+/** Custo por unidade de compra do insumo (ex.: R$/kg). */
+export function supplyUnitCost(supply: Supply): number {
+  if (!supply.purchase_quantity) return 0;
+  return supply.purchase_price / supply.purchase_quantity;
+}
+
+/**
+ * Custo da quantidade usada em uma receita.
+ *
+ * TODO: a conversão entre unidades (ex.: 300 g de um insumo comprado em kg)
+ * será implementada em uma etapa posterior. Por enquanto assume-se que a
+ * unidade da receita corresponde à unidade de compra.
+ */
+export function recipeSupplyCost(
+  supply: Supply,
+  quantity: number,
+  _unit: MeasurementUnit,
+): number {
+  return supplyUnitCost(supply) * quantity;
 }
 
 /** Junta receita + insumos e calcula custos totais, unitários e margem. */
 export function buildRecipeWithCosts(
   recipe: Recipe,
-  links: RecipeIngredient[],
-  ingredients: Ingredient[],
+  links: RecipeSupply[],
+  supplies: Supply[],
 ): RecipeWithCosts {
-  const byId = new Map(ingredients.map((i) => [i.id, i]));
+  const byId = new Map(supplies.map((s) => [s.id, s]));
 
   const items = links
-    .filter((link) => byId.has(link.ingredient_id))
-    .map<RecipeIngredientLine>((link) => {
-      const ingredient = byId.get(link.ingredient_id)!;
+    .filter((link) => byId.has(link.supply_id))
+    .map<RecipeSupplyLine>((link) => {
+      const supply = byId.get(link.supply_id)!;
       return {
         ...link,
-        ingredient,
-        line_cost: ingredientUnitCost(ingredient) * link.quantity,
+        supply,
+        line_cost: recipeSupplyCost(supply, link.quantity, link.unit),
       };
     });
 
