@@ -121,12 +121,12 @@ function SuppliesPage() {
                       ) : null}
                     </td>
                     <td className="tabular px-4 py-3 text-muted-foreground">
-                      {formatNumber(item.quantity)} {item.unit}
+                      {formatNumber(item.purchase_quantity)} {item.purchase_unit}
                     </td>
-                    <td className="tabular px-4 py-3 text-right">{formatCurrency(item.cost)}</td>
+                    <td className="tabular px-4 py-3 text-right">{formatCurrency(item.purchase_price)}</td>
                     <td className="tabular px-4 py-3 text-right">
                       {formatCurrency(supplyUnitCost(item))}
-                      <span className="text-muted-foreground">/{item.unit}</span>
+                      <span className="text-muted-foreground">/{item.purchase_unit}</span>
                     </td>
                     <td className="px-2 py-3">
                       <RowActions
@@ -149,12 +149,12 @@ function SuppliesPage() {
                   <div>
                     <p className="font-medium">{item.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {formatNumber(item.quantity)} {item.unit} · {formatCurrency(item.cost)}
+                      {formatNumber(item.purchase_quantity)} {item.purchase_unit} · {formatCurrency(item.purchase_price)}
                     </p>
                   </div>
                   <p className="tabular shrink-0 text-sm">
                     {formatCurrency(supplyUnitCost(item))}
-                    <span className="text-muted-foreground">/{item.unit}</span>
+                    <span className="text-muted-foreground">/{item.purchase_unit}</span>
                   </p>
                 </div>
                 <div className="mt-1">

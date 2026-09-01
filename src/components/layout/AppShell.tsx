@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-import { useBusiness } from "@/hooks/use-custeia";
+import { useCurrentUser } from "@/hooks/use-custeia";
 
 const NAV_ITEMS = [
   { to: "/", label: "Visão geral" },
@@ -12,7 +12,7 @@ const NAV_ITEMS = [
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const business = useBusiness();
+  const user = useCurrentUser();
 
   return (
     <div className="min-h-screen bg-background">
@@ -22,7 +22,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             Custeia
           </Link>
           <span className="truncate text-xs text-muted-foreground">
-            {business.data?.name ?? ""}
+            {user.data?.name ?? ""}
           </span>
         </div>
 
