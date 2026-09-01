@@ -122,7 +122,13 @@ export function RecipeFormDialog({
           parsed.selling_price === "" || parsed.selling_price === undefined
             ? null
             : parsed.selling_price,
-        items: parsed.items,
+        items: parsed.items.map((item) => ({
+          ...item,
+          // A unidade da receita acompanha a unidade de compra do insumo
+          // enquanto a conversão de unidades não estiver implementada.
+          unit:
+            supplies.find((option) => option.id === item.supply_id)?.purchase_unit ?? "unidade",
+        })),
       },
     });
     onOpenChange(false);
@@ -205,7 +211,7 @@ export function RecipeFormDialog({
           </Field>
 
           <fieldset className="rounded border border-border">
-            <legend className="ml-3 px-1 text-[13px] font-medium">Ingredientes</legend>
+            <legend className="ml-3 px-1 text-[13px] font-medium">Insumos</legend>
             <div className="space-y-3 p-3">
               {items.fields.map((fieldItem, index) => (
                 <div key={fieldItem.id} className="flex flex-wrap items-start gap-2">
@@ -224,7 +230,7 @@ export function RecipeFormDialog({
                       <SelectContent>
                         {supplies.map((option) => (
                           <SelectItem key={option.id} value={option.id}>
-                            {option.name} ({option.unit})
+                            {option.name} ({option.purchase_unit})
                           </SelectItem>
                         ))}
                       </SelectContent>

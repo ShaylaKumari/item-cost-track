@@ -201,7 +201,7 @@ function RecipesPage() {
         open={pendingDelete !== undefined}
         onOpenChange={(open) => !open && setPendingDelete(undefined)}
         title={`Excluir "${pendingDelete?.name ?? ""}"?`}
-        description="A receita e seus ingredientes serão removidos. Vendas já registradas impedem a exclusão."
+        description="A receita e seus insumos serão removidos. Vendas já registradas impedem a exclusão."
         isPending={deleteRecipe.isPending}
         onConfirm={() => {
           if (!pendingDelete) return;
