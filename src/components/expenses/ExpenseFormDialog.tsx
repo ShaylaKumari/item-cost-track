@@ -64,7 +64,7 @@ export function ExpenseFormDialog({ open, onOpenChange, expense }: ExpenseFormDi
             description: expense.description,
             category: expense.category,
             amount: expense.amount as never,
-            date: expense.date.slice(0, 10),
+            date: expense.expense_date.slice(0, 10),
             notes: expense.notes ?? "",
           }
         : {
@@ -85,7 +85,7 @@ export function ExpenseFormDialog({ open, onOpenChange, expense }: ExpenseFormDi
         description: parsed.description,
         category: parsed.category,
         amount: parsed.amount,
-        date: parsed.date,
+        expense_date: parsed.date,
         notes: parsed.notes ? parsed.notes : null,
       },
     });

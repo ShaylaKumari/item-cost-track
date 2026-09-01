@@ -103,7 +103,7 @@ function ExpensesPage() {
               <div className="min-w-[10rem] flex-1">
                 <p className="text-sm font-medium">{expense.description}</p>
                 <p className="text-xs text-muted-foreground">
-                  {expense.category} · {formatDate(expense.date)}
+                  {expense.category} · {formatDate(expense.expense_date)}
                   {expense.notes ? ` · ${expense.notes}` : ""}
                 </p>
               </div>

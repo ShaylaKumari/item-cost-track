@@ -8,7 +8,7 @@ import { EmptyState, ErrorBlock, LoadingRows } from "@/components/common/StateBl
 import { AppShell } from "@/components/layout/AppShell";
 import { RecipeFormDialog } from "@/components/recipes/RecipeFormDialog";
 import { Button } from "@/components/ui/button";
-import { useDeleteRecipe, useIngredients, useRecipes } from "@/hooks/use-custeia";
+import { useDeleteRecipe, useSupplies, useRecipes } from "@/hooks/use-custeia";
 import { formatCurrency, formatNumber, formatPercent } from "@/lib/format";
 import type { RecipeWithCosts } from "@/types/domain";
 
@@ -33,7 +33,7 @@ export const Route = createFileRoute("/produtos")({
 
 function RecipesPage() {
   const recipes = useRecipes();
-  const ingredients = useIngredients();
+  const supplies = useSupplies();
   const deleteRecipe = useDeleteRecipe();
 
   const [formOpen, setFormOpen] = useState(false);
@@ -41,7 +41,7 @@ function RecipesPage() {
   const [pendingDelete, setPendingDelete] = useState<RecipeWithCosts | undefined>(undefined);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const hasIngredients = (ingredients.data ?? []).length > 0;
+  const hasSupplies = (supplies.data ?? []).length > 0;
 
   function openNew() {
     setEditing(undefined);
@@ -54,7 +54,7 @@ function RecipesPage() {
         title="Produtos"
         description="Cada produto é uma receita. O custo vem dos insumos; o preço de venda define seu lucro."
         actions={
-          <Button onClick={openNew} disabled={!hasIngredients}>
+          <Button onClick={openNew} disabled={!hasSupplies}>
             Novo produto
           </Button>
         }
@@ -64,7 +64,7 @@ function RecipesPage() {
         <LoadingRows rows={3} />
       ) : recipes.isError ? (
         <ErrorBlock onRetry={() => void recipes.refetch()} />
-      ) : !hasIngredients ? (
+      ) : !hasSupplies ? (
         <EmptyState
           title="Cadastre insumos antes de criar um produto."
           hint="O custo da receita é calculado a partir dos insumos, então eles precisam existir primeiro."
@@ -161,9 +161,9 @@ function RecipesPage() {
                       <tbody className="divide-y divide-border">
                         {recipe.items.map((item) => (
                           <tr key={item.id}>
-                            <td className="py-2">{item.ingredient.name}</td>
+                            <td className="py-2">{item.supply.name}</td>
                             <td className="tabular py-2 text-muted-foreground">
-                              {formatNumber(item.quantity)} {item.ingredient.unit}
+                              {formatNumber(item.quantity)} {item.supply.purchase_unit}
                             </td>
                             <td className="tabular py-2 text-right">
                               {formatCurrency(item.line_cost)}
@@ -194,14 +194,14 @@ function RecipesPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         recipe={editing}
-        ingredients={ingredients.data ?? []}
+        supplies={supplies.data ?? []}
       />
 
       <ConfirmDeleteDialog
         open={pendingDelete !== undefined}
         onOpenChange={(open) => !open && setPendingDelete(undefined)}
         title={`Excluir "${pendingDelete?.name ?? ""}"?`}
-        description="A receita e seus ingredientes serão removidos. Vendas já registradas impedem a exclusão."
+        description="A receita e seus insumos serão removidos. Vendas já registradas impedem a exclusão."
         isPending={deleteRecipe.isPending}
         onConfirm={() => {
           if (!pendingDelete) return;

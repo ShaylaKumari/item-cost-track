@@ -84,7 +84,7 @@ function SalesPage() {
                 </div>
 
                 <p className="tabular ml-auto text-sm font-medium">
-                  {formatCurrency(sale.total_amount)}
+                  {formatCurrency(sale.total_price)}
                 </p>
 
                 <div className="flex gap-1">

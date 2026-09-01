@@ -4,15 +4,15 @@ import { toast } from "sonner";
 import { repository } from "@/data/repository";
 import type {
   ExpenseInput,
-  IngredientInput,
   Period,
   RecipeInput,
   SaleInput,
+  SupplyInput,
 } from "@/types/domain";
 
 export const queryKeys = {
-  business: ["business"] as const,
-  ingredients: ["ingredients"] as const,
+  currentUser: ["current-user"] as const,
+  supplies: ["supplies"] as const,
   recipes: ["recipes"] as const,
   sales: ["sales"] as const,
   expenses: ["expenses"] as const,
@@ -31,12 +31,12 @@ function useInvalidateAll() {
   };
 }
 
-export function useBusiness() {
-  return useQuery({ queryKey: queryKeys.business, queryFn: () => repository.getBusiness() });
+export function useCurrentUser() {
+  return useQuery({ queryKey: queryKeys.currentUser, queryFn: () => repository.getCurrentUser() });
 }
 
-export function useIngredients() {
-  return useQuery({ queryKey: queryKeys.ingredients, queryFn: () => repository.listIngredients() });
+export function useSupplies() {
+  return useQuery({ queryKey: queryKeys.supplies, queryFn: () => repository.listSupplies() });
 }
 
 export function useRecipes() {
@@ -60,11 +60,11 @@ export function usePeriodResult(period: Period) {
 
 /* ---------------------------- Insumos ---------------------------- */
 
-export function useSaveIngredient() {
+export function useSaveSupply() {
   const invalidate = useInvalidateAll();
   return useMutation({
-    mutationFn: ({ id, input }: { id?: string | undefined; input: IngredientInput }) =>
-      id ? repository.updateIngredient(id, input) : repository.createIngredient(input),
+    mutationFn: ({ id, input }: { id?: string | undefined; input: SupplyInput }) =>
+      id ? repository.updateSupply(id, input) : repository.createSupply(input),
     onSuccess: (_data, variables) => {
       invalidate();
       toast.success(variables.id ? "Insumo atualizado." : "Insumo cadastrado.");
@@ -73,10 +73,10 @@ export function useSaveIngredient() {
   });
 }
 
-export function useDeleteIngredient() {
+export function useDeleteSupply() {
   const invalidate = useInvalidateAll();
   return useMutation({
-    mutationFn: (id: string) => repository.deleteIngredient(id),
+    mutationFn: (id: string) => repository.deleteSupply(id),
     onSuccess: () => {
       invalidate();
       toast.success("Insumo excluído.");

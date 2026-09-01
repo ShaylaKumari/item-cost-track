@@ -23,11 +23,11 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useSaveRecipe } from "@/hooks/use-custeia";
-import { ingredientUnitCost } from "@/lib/calculations";
+import { supplyUnitCost } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
 import {
   MEASUREMENT_UNITS,
-  type Ingredient,
+  type Supply,
   type MeasurementUnit,
   type RecipeWithCosts,
 } from "@/types/domain";
@@ -43,7 +43,7 @@ const schema = z.object({
   items: z
     .array(
       z.object({
-        ingredient_id: z.string().min(1, "Selecione um insumo."),
+        supply_id: z.string().min(1, "Selecione um insumo."),
         quantity: z.coerce.number().positive("Quantidade inválida."),
       }),
     )
@@ -56,7 +56,7 @@ interface RecipeFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   recipe?: RecipeWithCosts | undefined;
-  ingredients: Ingredient[];
+  supplies: Supply[];
 }
 
 const EMPTY: FormValues = {
@@ -65,14 +65,14 @@ const EMPTY: FormValues = {
   yield_quantity: "" as never,
   yield_unit: "unidade",
   selling_price: "",
-  items: [{ ingredient_id: "", quantity: "" as never }],
+  items: [{ supply_id: "", quantity: "" as never }],
 };
 
 export function RecipeFormDialog({
   open,
   onOpenChange,
   recipe,
-  ingredients,
+  supplies,
 }: RecipeFormDialogProps) {
   const save = useSaveRecipe();
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: EMPTY });
@@ -90,7 +90,7 @@ export function RecipeFormDialog({
             yield_unit: recipe.yield_unit,
             selling_price: (recipe.selling_price ?? "") as never,
             items: recipe.items.map((item) => ({
-              ingredient_id: item.ingredient_id,
+              supply_id: item.supply_id,
               quantity: item.quantity as never,
             })),
           }
@@ -102,10 +102,10 @@ export function RecipeFormDialog({
   const yieldQuantity = Number(form.watch("yield_quantity")) || 0;
 
   const totalCost = watchedItems.reduce((sum, line) => {
-    const ingredient = ingredients.find((option) => option.id === line?.ingredient_id);
+    const supply = supplies.find((option) => option.id === line?.supply_id);
     const quantity = Number(line?.quantity);
-    if (!ingredient || !Number.isFinite(quantity)) return sum;
-    return sum + ingredientUnitCost(ingredient) * quantity;
+    if (!supply || !Number.isFinite(quantity)) return sum;
+    return sum + supplyUnitCost(supply) * quantity;
   }, 0);
   const unitCost = yieldQuantity > 0 ? totalCost / yieldQuantity : 0;
 
@@ -122,7 +122,13 @@ export function RecipeFormDialog({
           parsed.selling_price === "" || parsed.selling_price === undefined
             ? null
             : parsed.selling_price,
-        items: parsed.items,
+        items: parsed.items.map((item) => ({
+          ...item,
+          // A unidade da receita acompanha a unidade de compra do insumo
+          // enquanto a conversão de unidades não estiver implementada.
+          unit:
+            supplies.find((option) => option.id === item.supply_id)?.purchase_unit ?? "unidade",
+        })),
       },
     });
     onOpenChange(false);
@@ -205,15 +211,15 @@ export function RecipeFormDialog({
           </Field>
 
           <fieldset className="rounded border border-border">
-            <legend className="ml-3 px-1 text-[13px] font-medium">Ingredientes</legend>
+            <legend className="ml-3 px-1 text-[13px] font-medium">Insumos</legend>
             <div className="space-y-3 p-3">
               {items.fields.map((fieldItem, index) => (
                 <div key={fieldItem.id} className="flex flex-wrap items-start gap-2">
                   <div className="min-w-[10rem] flex-1">
                     <Select
-                      value={form.watch(`items.${index}.ingredient_id`)}
+                      value={form.watch(`items.${index}.supply_id`)}
                       onValueChange={(value) =>
-                        form.setValue(`items.${index}.ingredient_id`, value, {
+                        form.setValue(`items.${index}.supply_id`, value, {
                           shouldValidate: true,
                         })
                       }
@@ -222,16 +228,16 @@ export function RecipeFormDialog({
                         <SelectValue placeholder="Selecione o insumo" />
                       </SelectTrigger>
                       <SelectContent>
-                        {ingredients.map((option) => (
+                        {supplies.map((option) => (
                           <SelectItem key={option.id} value={option.id}>
-                            {option.name} ({option.unit})
+                            {option.name} ({option.purchase_unit})
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.items?.[index]?.ingredient_id ? (
+                    {errors.items?.[index]?.supply_id ? (
                       <p role="alert" className="mt-1 text-xs text-destructive">
-                        {errors.items[index]?.ingredient_id?.message}
+                        {errors.items[index]?.supply_id?.message}
                       </p>
                     ) : null}
                   </div>
@@ -276,7 +282,7 @@ export function RecipeFormDialog({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => items.append({ ingredient_id: "", quantity: "" as never })}
+                onClick={() => items.append({ supply_id: "", quantity: "" as never })}
               >
                 Adicionar insumo
               </Button>

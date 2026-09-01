@@ -94,7 +94,7 @@ function OverviewPage() {
                       {sale.items.map((item) => item.recipe_name).join(", ")}
                     </span>
                     <span className="tabular text-sm font-medium">
-                      {formatCurrency(sale.total_amount)}
+                      {formatCurrency(sale.total_price)}
                     </span>
                   </li>
                 ))}
