@@ -30,6 +30,7 @@ import type {
   SaleInput,
   SaleItem,
   SaleWithItems,
+  RecipeWithCosts,
   Supply,
   SupplyInput,
   User,
@@ -44,8 +45,8 @@ export interface CusteiaRepository {
   updateSupply(id: string, input: SupplyInput): Promise<Supply>;
   deleteSupply(id: string): Promise<void>;
 
-  listRecipes(): Promise<RecipeWithCostsList>;
-  getRecipe(id: string): Promise<RecipeWithCostsItem>;
+  listRecipes(): Promise<RecipeWithCosts[]>;
+  getRecipe(id: string): Promise<RecipeWithCosts>;
   createRecipe(input: RecipeInput): Promise<Recipe>;
   updateRecipe(id: string, input: RecipeInput): Promise<Recipe>;
   deleteRecipe(id: string): Promise<void>;
@@ -62,10 +63,6 @@ export interface CusteiaRepository {
 
   getPeriodResult(period: Period): Promise<PeriodResult>;
 }
-
-import type { RecipeWithCosts } from "@/types/domain";
-type RecipeWithCostsItem = RecipeWithCosts;
-type RecipeWithCostsList = RecipeWithCosts[];
 
 /* -------------------------------------------------------------------------- */
 /* Implementação mock em memória                                              */
