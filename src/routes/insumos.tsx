@@ -5,14 +5,14 @@ import { ConfirmDeleteDialog } from "@/components/common/ConfirmDeleteDialog";
 import { PageHeader } from "@/components/common/PageHeader";
 import { RowActions } from "@/components/common/RowActions";
 import { EmptyState, ErrorBlock, LoadingRows } from "@/components/common/StateBlocks";
-import { IngredientFormDialog } from "@/components/ingredients/IngredientFormDialog";
+import { SupplyFormDialog } from "@/components/supplies/SupplyFormDialog";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useDeleteIngredient, useIngredients } from "@/hooks/use-custeia";
-import { ingredientUnitCost } from "@/lib/calculations";
+import { useDeleteSupply, useSupplies } from "@/hooks/use-custeia";
+import { supplyUnitCost } from "@/lib/calculations";
 import { formatCurrency, formatNumber } from "@/lib/format";
-import type { Ingredient } from "@/types/domain";
+import type { Supply } from "@/types/domain";
 
 export const Route = createFileRoute("/insumos")({
   head: () => ({
@@ -30,31 +30,31 @@ export const Route = createFileRoute("/insumos")({
       },
     ],
   }),
-  component: IngredientsPage,
+  component: SuppliesPage,
 });
 
-function IngredientsPage() {
-  const ingredients = useIngredients();
-  const deleteIngredient = useDeleteIngredient();
+function SuppliesPage() {
+  const supplies = useSupplies();
+  const deleteSupply = useDeleteSupply();
 
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<Ingredient | undefined>(undefined);
-  const [pendingDelete, setPendingDelete] = useState<Ingredient | undefined>(undefined);
+  const [editing, setEditing] = useState<Supply | undefined>(undefined);
+  const [pendingDelete, setPendingDelete] = useState<Supply | undefined>(undefined);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return ingredients.data ?? [];
-    return (ingredients.data ?? []).filter((item) => item.name.toLowerCase().includes(term));
-  }, [ingredients.data, search]);
+    if (!term) return supplies.data ?? [];
+    return (supplies.data ?? []).filter((item) => item.name.toLowerCase().includes(term));
+  }, [supplies.data, search]);
 
   function openNew() {
     setEditing(undefined);
     setFormOpen(true);
   }
 
-  function openEdit(ingredient: Ingredient) {
-    setEditing(ingredient);
+  function openEdit(supply: Supply) {
+    setEditing(supply);
     setFormOpen(true);
   }
 
@@ -76,11 +76,11 @@ function IngredientsPage() {
         />
       </div>
 
-      {ingredients.isPending ? (
+      {supplies.isPending ? (
         <LoadingRows />
-      ) : ingredients.isError ? (
-        <ErrorBlock onRetry={() => void ingredients.refetch()} />
-      ) : (ingredients.data ?? []).length === 0 ? (
+      ) : supplies.isError ? (
+        <ErrorBlock onRetry={() => void supplies.refetch()} />
+      ) : (supplies.data ?? []).length === 0 ? (
         <EmptyState
           title="Você ainda não cadastrou nenhum insumo."
           hint="Comece pelos itens que você compra com mais frequência, como farinha, açúcar e embalagens."
@@ -125,7 +125,7 @@ function IngredientsPage() {
                     </td>
                     <td className="tabular px-4 py-3 text-right">{formatCurrency(item.cost)}</td>
                     <td className="tabular px-4 py-3 text-right">
-                      {formatCurrency(ingredientUnitCost(item))}
+                      {formatCurrency(supplyUnitCost(item))}
                       <span className="text-muted-foreground">/{item.unit}</span>
                     </td>
                     <td className="px-2 py-3">
@@ -153,7 +153,7 @@ function IngredientsPage() {
                     </p>
                   </div>
                   <p className="tabular shrink-0 text-sm">
-                    {formatCurrency(ingredientUnitCost(item))}
+                    {formatCurrency(supplyUnitCost(item))}
                     <span className="text-muted-foreground">/{item.unit}</span>
                   </p>
                 </div>
@@ -170,17 +170,17 @@ function IngredientsPage() {
         </>
       )}
 
-      <IngredientFormDialog open={formOpen} onOpenChange={setFormOpen} ingredient={editing} />
+      <SupplyFormDialog open={formOpen} onOpenChange={setFormOpen} supply={editing} />
 
       <ConfirmDeleteDialog
         open={pendingDelete !== undefined}
         onOpenChange={(open) => !open && setPendingDelete(undefined)}
         title={`Excluir "${pendingDelete?.name ?? ""}"?`}
         description="O insumo será removido do cadastro. Receitas que já usam este insumo precisam ser ajustadas antes."
-        isPending={deleteIngredient.isPending}
+        isPending={deleteSupply.isPending}
         onConfirm={() => {
           if (!pendingDelete) return;
-          deleteIngredient.mutate(pendingDelete.id, {
+          deleteSupply.mutate(pendingDelete.id, {
             onSettled: () => setPendingDelete(undefined),
           });
         }}

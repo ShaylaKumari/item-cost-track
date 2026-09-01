@@ -22,8 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useSaveIngredient } from "@/hooks/use-custeia";
-import { MEASUREMENT_UNITS, type Ingredient, type MeasurementUnit } from "@/types/domain";
+import { useSaveSupply } from "@/hooks/use-custeia";
+import { MEASUREMENT_UNITS, type Supply, type MeasurementUnit } from "@/types/domain";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Informe o nome do insumo."),
@@ -35,42 +35,42 @@ const schema = z.object({
 
 type FormValues = z.input<typeof schema>;
 
-interface IngredientFormDialogProps {
+interface SupplyFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  ingredient?: Ingredient | undefined;
+  supply?: Supply | undefined;
 }
 
 const EMPTY: FormValues = { name: "", unit: "kg", quantity: "" as never, cost: "" as never, notes: "" };
 
-export function IngredientFormDialog({
+export function SupplyFormDialog({
   open,
   onOpenChange,
-  ingredient,
-}: IngredientFormDialogProps) {
-  const save = useSaveIngredient();
+  supply,
+}: SupplyFormDialogProps) {
+  const save = useSaveSupply();
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: EMPTY });
   const { errors } = form.formState;
 
   useEffect(() => {
     if (!open) return;
     form.reset(
-      ingredient
+      supply
         ? {
-            name: ingredient.name,
-            unit: ingredient.unit,
-            quantity: ingredient.quantity as never,
-            cost: ingredient.cost as never,
-            notes: ingredient.notes ?? "",
+            name: supply.name,
+            unit: supply.unit,
+            quantity: supply.quantity as never,
+            cost: supply.cost as never,
+            notes: supply.notes ?? "",
           }
         : EMPTY,
     );
-  }, [open, ingredient, form]);
+  }, [open, supply, form]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     const parsed = schema.parse(values);
     await save.mutateAsync({
-      id: ingredient?.id,
+      id: supply?.id,
       input: {
         name: parsed.name,
         unit: parsed.unit,
@@ -89,7 +89,7 @@ export function IngredientFormDialog({
       <DialogContent className="rounded sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-base">
-            {ingredient ? "Editar insumo" : "Novo insumo"}
+            {supply ? "Editar insumo" : "Novo insumo"}
           </DialogTitle>
           <DialogDescription>
             Informe a quantidade comprada e quanto ela custou. O custo por unidade é calculado

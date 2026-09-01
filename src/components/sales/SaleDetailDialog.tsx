@@ -52,18 +52,18 @@ export function SaleDetailDialog({ sale, onOpenChange }: SaleDetailDialogProps) 
                     <td className="py-2">{item.recipe_name}</td>
                     <td className="tabular py-2 text-right">{item.quantity}</td>
                     <td className="tabular py-2 text-right">{formatCurrency(item.unit_price)}</td>
-                    <td className="tabular py-2 text-right">{formatCurrency(item.total_amount)}</td>
+                    <td className="tabular py-2 text-right">{formatCurrency(item.total_price)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
 
             <dl className="mt-4 space-y-1.5 border-t border-border pt-3 text-sm">
-              <Row label="Valor da venda" value={formatCurrency(sale.total_amount)} />
+              <Row label="Valor da venda" value={formatCurrency(sale.total_price)} />
               <Row label="Custo dos produtos" value={formatCurrency(sale.total_cost)} />
               <Row
                 label="Resultado da venda"
-                value={formatCurrency(sale.total_amount - sale.total_cost)}
+                value={formatCurrency(sale.total_price - sale.total_cost)}
                 strong
               />
             </dl>
