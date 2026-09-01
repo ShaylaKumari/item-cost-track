@@ -156,7 +156,7 @@ export function useSaveExpense() {
 export function useDeleteExpense() {
   const invalidate = useInvalidateAll();
   return useMutation({
-    mutationFn: ({ id }: { id: string }) => repository.deleteExpense(id),
+    mutationFn: (id: string) => repository.deleteExpense(id),
     onSuccess: () => {
       invalidate();
       toast.success("Despesa excluída.");
