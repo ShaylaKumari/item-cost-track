@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useSaveRecipe } from "@/hooks/use-custeia";
-import { supplyUnitCost } from "@/lib/calculations";
+import { areUnitsCompatible, compatibleUnits, recipeSupplyCost } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
 import {
   MEASUREMENT_UNITS,
@@ -32,25 +32,42 @@ import {
   type RecipeWithCosts,
 } from "@/types/domain";
 
-const schema = z.object({
-  name: z.string().trim().min(2, "Informe o nome do produto."),
-  description: z.string().trim().max(300).optional(),
-  yield_quantity: z.coerce.number().positive("O rendimento deve ser maior que zero."),
-  yield_unit: z.enum(MEASUREMENT_UNITS),
-  selling_price: z
-    .union([z.literal(""), z.coerce.number().min(0, "O preço não pode ser negativo.")])
-    .optional(),
-  items: z
-    .array(
-      z.object({
-        supply_id: z.string().min(1, "Selecione um insumo."),
-        quantity: z.coerce.number().positive("Quantidade inválida."),
-      }),
-    )
-    .min(1, "Adicione pelo menos um insumo à receita."),
-});
+const INCOMPATIBLE_UNIT_MESSAGE = "Não é possível utilizar essa unidade para este insumo.";
 
-type FormValues = z.input<typeof schema>;
+function buildSchema(supplies: Supply[]) {
+  return z.object({
+    name: z.string().trim().min(2, "Informe o nome do produto."),
+    description: z.string().trim().max(300).optional(),
+    yield_quantity: z.coerce.number().positive("O rendimento deve ser maior que zero."),
+    yield_unit: z.enum(MEASUREMENT_UNITS),
+    selling_price: z
+      .union([z.literal(""), z.coerce.number().min(0, "O preço não pode ser negativo.")])
+      .optional(),
+    items: z
+      .array(
+        z
+          .object({
+            supply_id: z.string().min(1, "Selecione um insumo."),
+            quantity: z.coerce.number().positive("Quantidade inválida."),
+            unit: z.enum(MEASUREMENT_UNITS),
+          })
+          .superRefine((item, ctx) => {
+            const supply = supplies.find((option) => option.id === item.supply_id);
+            if (!supply) return;
+            if (!areUnitsCompatible(item.unit, supply.purchase_unit)) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["unit"],
+                message: INCOMPATIBLE_UNIT_MESSAGE,
+              });
+            }
+          }),
+      )
+      .min(1, "Adicione pelo menos um insumo à receita."),
+  });
+}
+
+type FormValues = z.input<ReturnType<typeof buildSchema>>;
 
 interface RecipeFormDialogProps {
   open: boolean;
@@ -65,7 +82,7 @@ const EMPTY: FormValues = {
   yield_quantity: "" as never,
   yield_unit: "unidade",
   selling_price: "",
-  items: [{ supply_id: "", quantity: "" as never }],
+  items: [{ supply_id: "", quantity: "" as never, unit: "unidade" }],
 };
 
 export function RecipeFormDialog({
@@ -75,6 +92,7 @@ export function RecipeFormDialog({
   supplies,
 }: RecipeFormDialogProps) {
   const save = useSaveRecipe();
+  const schema = useMemo(() => buildSchema(supplies), [supplies]);
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: EMPTY });
   const items = useFieldArray({ control: form.control, name: "items" });
   const { errors } = form.formState;
@@ -92,6 +110,7 @@ export function RecipeFormDialog({
             items: recipe.items.map((item) => ({
               supply_id: item.supply_id,
               quantity: item.quantity as never,
+              unit: item.unit,
             })),
           }
         : EMPTY,
@@ -101,11 +120,24 @@ export function RecipeFormDialog({
   const watchedItems = form.watch("items") ?? [];
   const yieldQuantity = Number(form.watch("yield_quantity")) || 0;
 
+  /** Ao trocar o insumo, garante que a unidade selecionada continue compatível. */
+  function handleSupplyChange(index: number, supplyId: string) {
+    form.setValue(`items.${index}.supply_id`, supplyId, { shouldValidate: true });
+    const supply = supplies.find((option) => option.id === supplyId);
+    if (!supply) return;
+    const current = form.getValues(`items.${index}.unit`);
+    if (!current || !areUnitsCompatible(current, supply.purchase_unit)) {
+      form.setValue(`items.${index}.unit`, supply.purchase_unit, { shouldValidate: true });
+    }
+  }
+
   const totalCost = watchedItems.reduce((sum, line) => {
     const supply = supplies.find((option) => option.id === line?.supply_id);
     const quantity = Number(line?.quantity);
-    if (!supply || !Number.isFinite(quantity)) return sum;
-    return sum + supplyUnitCost(supply) * quantity;
+    const unit = line?.unit as MeasurementUnit | undefined;
+    if (!supply || !unit || !Number.isFinite(quantity)) return sum;
+    if (!areUnitsCompatible(unit, supply.purchase_unit)) return sum;
+    return sum + recipeSupplyCost(supply, quantity, unit);
   }, 0);
   const unitCost = yieldQuantity > 0 ? totalCost / yieldQuantity : 0;
 
@@ -123,16 +155,15 @@ export function RecipeFormDialog({
             ? null
             : parsed.selling_price,
         items: parsed.items.map((item) => ({
-          ...item,
-          // A unidade da receita acompanha a unidade de compra do insumo
-          // enquanto a conversão de unidades não estiver implementada.
-          unit:
-            supplies.find((option) => option.id === item.supply_id)?.purchase_unit ?? "unidade",
+          supply_id: item.supply_id,
+          quantity: item.quantity,
+          unit: item.unit,
         })),
       },
     });
     onOpenChange(false);
   });
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
