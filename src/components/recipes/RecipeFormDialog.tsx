@@ -244,16 +244,19 @@ export function RecipeFormDialog({
           <fieldset className="rounded border border-border">
             <legend className="ml-3 px-1 text-[13px] font-medium">Insumos</legend>
             <div className="space-y-3 p-3">
-              {items.fields.map((fieldItem, index) => (
+              {items.fields.map((fieldItem, index) => {
+                const selectedSupply = supplies.find(
+                  (option) => option.id === form.watch(`items.${index}.supply_id`),
+                );
+                const unitOptions = selectedSupply
+                  ? compatibleUnits(selectedSupply.purchase_unit)
+                  : [...MEASUREMENT_UNITS];
+                return (
                 <div key={fieldItem.id} className="flex flex-wrap items-start gap-2">
                   <div className="min-w-[10rem] flex-1">
                     <Select
                       value={form.watch(`items.${index}.supply_id`)}
-                      onValueChange={(value) =>
-                        form.setValue(`items.${index}.supply_id`, value, {
-                          shouldValidate: true,
-                        })
-                      }
+                      onValueChange={(value) => handleSupplyChange(index, value)}
                     >
                       <SelectTrigger aria-label={`Insumo ${index + 1}`}>
                         <SelectValue placeholder="Selecione o insumo" />
@@ -273,7 +276,7 @@ export function RecipeFormDialog({
                     ) : null}
                   </div>
 
-                  <div className="w-28">
+                  <div className="w-24">
                     <Input
                       type="number"
                       step="any"
@@ -285,6 +288,34 @@ export function RecipeFormDialog({
                     {errors.items?.[index]?.quantity ? (
                       <p role="alert" className="mt-1 text-xs text-destructive">
                         {errors.items[index]?.quantity?.message}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="w-28">
+                    <Select
+                      value={form.watch(`items.${index}.unit`)}
+                      disabled={!selectedSupply}
+                      onValueChange={(value) =>
+                        form.setValue(`items.${index}.unit`, value as MeasurementUnit, {
+                          shouldValidate: true,
+                        })
+                      }
+                    >
+                      <SelectTrigger aria-label={`Unidade do insumo ${index + 1}`}>
+                        <SelectValue placeholder="Unidade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {unitOptions.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.items?.[index]?.unit ? (
+                      <p role="alert" className="mt-1 text-xs text-destructive">
+                        {errors.items[index]?.unit?.message}
                       </p>
                     ) : null}
                   </div>
@@ -301,7 +332,8 @@ export function RecipeFormDialog({
                     Remover
                   </Button>
                 </div>
-              ))}
+                );
+              })}
 
               {typeof errors.items?.message === "string" ? (
                 <p role="alert" className="text-xs text-destructive">
@@ -313,7 +345,9 @@ export function RecipeFormDialog({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => items.append({ supply_id: "", quantity: "" as never })}
+                onClick={() =>
+                  items.append({ supply_id: "", quantity: "" as never, unit: "unidade" })
+                }
               >
                 Adicionar insumo
               </Button>
