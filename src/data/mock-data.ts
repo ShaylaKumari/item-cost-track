@@ -72,10 +72,10 @@ export const MOCK_RECIPES: Recipe[] = [
 ];
 
 export const MOCK_RECIPE_SUPPLIES: RecipeSupply[] = [
-  { id: "rs-1", recipe_id: "rec-1", supply_id: "sup-1", quantity: 0.5, unit: "kg" },
-  { id: "rs-2", recipe_id: "rec-1", supply_id: "sup-3", quantity: 0.3, unit: "kg" },
-  { id: "rs-3", recipe_id: "rec-1", supply_id: "sup-2", quantity: 0.2, unit: "kg" },
-  { id: "rs-4", recipe_id: "rec-1", supply_id: "sup-4", quantity: 0.2, unit: "kg" },
+  { id: "rs-1", recipe_id: "rec-1", supply_id: "sup-1", quantity: 500, unit: "g" },
+  { id: "rs-2", recipe_id: "rec-1", supply_id: "sup-3", quantity: 300, unit: "g" },
+  { id: "rs-3", recipe_id: "rec-1", supply_id: "sup-2", quantity: 200, unit: "g" },
+  { id: "rs-4", recipe_id: "rec-1", supply_id: "sup-4", quantity: 200, unit: "g" },
   { id: "rs-5", recipe_id: "rec-1", supply_id: "sup-5", quantity: 4, unit: "unidade" },
   { id: "rs-6", recipe_id: "rec-1", supply_id: "sup-7", quantity: 20, unit: "unidade" },
 
@@ -86,8 +86,8 @@ export const MOCK_RECIPE_SUPPLIES: RecipeSupply[] = [
   { id: "rs-11", recipe_id: "rec-2", supply_id: "sup-4", quantity: 0.15, unit: "kg" },
 
   { id: "rs-12", recipe_id: "rec-3", supply_id: "sup-6", quantity: 3, unit: "unidade" },
-  { id: "rs-13", recipe_id: "rec-3", supply_id: "sup-3", quantity: 0.15, unit: "kg" },
-  { id: "rs-14", recipe_id: "rec-3", supply_id: "sup-4", quantity: 0.05, unit: "kg" },
+  { id: "rs-13", recipe_id: "rec-3", supply_id: "sup-3", quantity: 150, unit: "g" },
+  { id: "rs-14", recipe_id: "rec-3", supply_id: "sup-4", quantity: 50, unit: "g" },
   { id: "rs-15", recipe_id: "rec-3", supply_id: "sup-7", quantity: 40, unit: "unidade" },
 ];
 
