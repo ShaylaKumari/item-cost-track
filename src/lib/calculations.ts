@@ -1,3 +1,4 @@
+import { MEASUREMENT_UNITS } from "@/types/domain";
 import type {
   MeasurementUnit,
   Recipe,
@@ -43,6 +44,16 @@ export class UnitConversionError extends Error {
     super(`Não é possível converter de "${fromUnit}" para "${toUnit}".`);
     this.name = "UnitConversionError";
   }
+}
+
+/** Duas unidades são compatíveis quando pertencem à mesma dimensão física. */
+export function areUnitsCompatible(fromUnit: MeasurementUnit, toUnit: MeasurementUnit): boolean {
+  return UNIT_DIMENSION[fromUnit] === UNIT_DIMENSION[toUnit];
+}
+
+/** Unidades que podem ser usadas para uma quantidade expressa em `unit`. */
+export function compatibleUnits(unit: MeasurementUnit): MeasurementUnit[] {
+  return MEASUREMENT_UNITS.filter((option) => areUnitsCompatible(option, unit));
 }
 
 /** Converte uma quantidade entre unidades da mesma dimensão. */
